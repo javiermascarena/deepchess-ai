@@ -100,7 +100,49 @@ class Rook(Piece):
 
     def __repr__(self) -> str: 
         return "r" if self.color else "R"
-    
+
+
+"""class Rook(Piece):
+    def __init__(self, position: list[int, int], color: bool):
+        super().__init__(position, color)
+
+
+    def possible_moves(self, board: list)-> None:
+        
+
+        directions = [(1,0),(-1,0),(0,1),(0,-1)] #right, left, up, down
+
+        #outer loop to iterate through the possible directions
+        for dir in directions: 
+
+            #inner loop, iterates from 1 to 8 as there are no more possibilities in a chess board
+            for move in range(1,8): 
+                updated_row = self.position[0] + dir[0] * move #calculates the new row value
+                updated_column = self.position[0] + dir[1]*move #calculates the new column value
+
+                updated_position = [updated_row, updated_column]
+
+                #if the new position is not part of the game board we exit the loop
+                if not self.check_inboard(updated_position):
+                    break 
+                
+                #variable contains the values in 
+                value_in_position = board[updated_row, updated_column]
+
+                #check the different values
+                if value_in_position == 0:
+                    #the square is empty
+                    self.possible_moves.append(updated_position)
+                
+
+                elif value_in_position.color!= self.color: # we found an enemy piece
+                    self.possible_moves.append(updated_position)
+
+                else: #piece from our team
+                    break #exit the loop
+
+
+""" 
 
 
 class Bishop(Piece):
