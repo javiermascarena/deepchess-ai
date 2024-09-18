@@ -23,6 +23,8 @@ class ChessBoard:
         self.initialize_board()
 
 
+
+
     def initialize_board(self) -> None:
         """Fills the chess board at the start of the game"""
 
