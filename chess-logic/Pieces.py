@@ -36,6 +36,8 @@ class Piece:
 
 
 class Pawn(Piece):
+    
+
 
     def calculate_possible_moves(self, board: list) -> None:
         """Calculates the possible moves the pawn can make"""
@@ -81,6 +83,11 @@ class Pawn(Piece):
 
 
 class Rook(Piece):
+    def __init__(self, position: list[int], color: bool):
+        super().__init__(position, color)
+
+        #variable to check if the rook has moved, for castling
+        self.has_moved = False
 
     def calculate_possible_moves(self, board: list) -> None:
         """Calculates the possible moves the rook can make"""
@@ -99,7 +106,7 @@ class Rook(Piece):
 
          #Checking every position
         for pos in pos_check:
-            piece = board[pos[0], pos[1]]
+            piece = board[pos[0]][pos[1]]
 
             #The movement can be done if there is no piece in the board
             #or the piece is of the opposite color
@@ -136,7 +143,7 @@ class Bishop(Piece):
 
         #Checking every position
         for pos in pos_check:
-            piece = board[pos[0], pos[1]]
+            piece = board[pos[0]][pos[1]]
 
             #The movement can be done if there is no piece in the board
             #or the piece is of the opposite color
@@ -238,7 +245,15 @@ class Queen(Piece):
 
 class King(Piece): 
 
-     def calculate_possible_moves(self, board: list) -> None:
+    def __init__(self, position: list[int], color: bool):
+        super().__init__(position, color)
+
+        #variable to check if the king has moved, for castling
+        self.has_moved = False
+
+
+
+    def calculate_possible_moves(self, board: list) -> None:
         """Calculates the possible moves the king can make"""
 
         pos_check = []
@@ -271,5 +286,5 @@ class King(Piece):
                 continue
 
     
-     def __repr__(self) -> str:
+    def __repr__(self) -> str:
         return "a" if self.color else "A"
