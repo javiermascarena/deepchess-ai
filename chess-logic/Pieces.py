@@ -11,6 +11,8 @@ class Piece:
         self.color = color
         # List that will store the possible moves of the piece
         self.possible_moves = []
+        # Wether the piece has been captured or not
+        self.captured = False
 
 
     def check_inboard(self, position: list[int]) -> bool:
