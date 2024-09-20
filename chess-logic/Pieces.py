@@ -29,13 +29,253 @@ class Piece:
 
         return inboard_positions
     
+
+
     def reset_posible_moves(self) -> None:
         """Resets possible moves of a piece, which will be done each turn"""
         self.possible_moves = []
 
 
 
+    def check_upward_moves(self, board: list)-> list:
+        """Checks the possible upward moves"""
+
+        # Initiate the variable
+        possible_moves = []
+
+        # All possible horizontal moves
+        for i in range(7): # It will not need more than 7 squares to check
+            possible_moves.append([self.position[0], self.position[1] + i])
+            
+        #Remove positions that are not in the chess board
+        pos_check = self.delete_outboard(possible_moves)
+
+        final_moves = []
+        #Check if the positions are empty or not
+        for pos in pos_check:
+            piece = board[pos[0]][pos[1]]
+
+            #The movement can be done if there is no piece in the board
+            #or the piece is of the opposite color
+            if piece.color != self.color or piece == 0:
+                final_moves.append(pos)
+            
+            # The piece is of the same color 
+            else:
+                break #we exit the code
+        
+        return final_moves
+
+
+    def check_downward_moves(self, board: list)-> list:
+        """Checks the possible downwards moves"""
+
+        # Initiate the variable
+        possible_moves = []
+
+        # All possible horizontal moves
+        for i in range(7): # It will not need more than 7 squares to check
+            possible_moves.append([self.position[0], self.position[1] - i])
+
+        #Remove positions that are not in the chess board
+        pos_check = self.delete_outboard(possible_moves)
+
+        final_moves = []
+        #Check if the positions are empty or not
+        for pos in pos_check:
+            piece = board[pos[0]][pos[1]]
+
+            #The movement can be done if there is no piece in the board
+            #or the piece is of the opposite color
+            if piece.color != self.color or piece == 0:
+                final_moves.append(pos)
+            
+            # The piece is of the same color 
+            else:
+                break #we exit the code
+        
+        return final_moves
+
+    def check_right_moves(self, board: list) -> list:
+        """Checks the possible right moves"""
+
+        # Initiate the variable
+        possible_moves = []
+
+        # All possible vertical moves
+        for i in range(7):
+            possible_moves.append([self.position[0] + i, self.position[1]])
+            possible_moves.append([self.position[0] - i, self.position[1]])
+
+        #Remove positions that are not in the chess board
+        pos_check = self.delete_outboard(possible_moves)
+
+        final_moves = []
+        #Check if the positions are empty or not
+        for pos in pos_check:
+            piece = board[pos[0]][pos[1]]
+
+            #The movement can be done if there is no piece in the board
+            #or the piece is of the opposite color
+            if piece.color != self.color or piece == 0:
+                final_moves.append(pos)
+            
+            # The piece is of the same color 
+            else:
+                break #we exit the code
+
+        return final_moves
+    
+    def check_left_moves(self, board: list) -> list:
+        """Checks the possible right moves"""
+
+        # Initiate the variable
+        possible_moves = []
+
+        # All possible vertical moves
+        for i in range(7):
+            possible_moves.append([self.position[0] - i, self.position[1]])
+
+        #Remove positions that are not in the chess board
+        pos_check = self.delete_outboard(possible_moves)
+
+        final_moves = []
+        #Check if the positions are empty or not
+        for pos in pos_check:
+            piece = board[pos[0]][pos[1]]
+
+            #The movement can be done if there is no piece in the board
+            #or the piece is of the opposite color
+            if piece.color != self.color or piece == 0:
+                final_moves.append(pos)
+            
+            # The piece is of the same color 
+            else:
+                break #we exit the code
+
+        return final_moves
+        
+    def check_northeast_moves(self, board: list) -> list:
+        """Checks the possible diagonal moves (up right)"""
+
+        # Initiate the variable
+        possible_moves = []
+
+        # All possible vertical moves
+        for i in range(7):
+            pos_check.append([self.position[0] + i, self.position[1] + i])
+
+        #Remove positions that are not in the chess board
+        pos_check = self.delete_outboard(possible_moves)
+
+        final_moves = []
+        #Check if the positions are empty or not
+        for pos in pos_check:
+            piece = board[pos[0]][pos[1]]
+
+            #The movement can be done if there is no piece in the board
+            #or the piece is of the opposite color
+            if piece.color != self.color or piece == 0:
+                final_moves.append(pos)
+            
+            # The piece is of the same color 
+            else:
+                break #we exit the code
+
+        return final_moves
+    
+    def check_northwest_moves(self, board: list)-> list:
+        """Check possible northwest moves(up left)"""
+
+        # Initiate the variable
+        possible_moves = []
+
+        # All possible vertical moves
+        for i in range(7):
+            pos_check.append([self.position[0] - i, self.position[1] + i])
+
+        #Remove positions that are not in the chess board
+        pos_check = self.delete_outboard(possible_moves)
+
+        final_moves = []
+        #Check if the positions are empty or not
+        for pos in pos_check:
+            piece = board[pos[0]][pos[1]]
+
+            #The movement can be done if there is no piece in the board
+            #or the piece is of the opposite color
+            if piece.color != self.color or piece == 0:
+                final_moves.append(pos)
+            
+            # The piece is of the same color 
+            else:
+                break #we exit the code
+
+        return final_moves
+
+    def check_southwest_moves(self, board: list) -> list:
+        """Check possible southwest moves (bottom left)"""
+
+        # Initiate the variable
+        possible_moves = []
+
+        # All possible vertical moves
+        for i in range(7):
+            pos_check.append([self.position[0] - i, self.position[1] - i])
+
+        #Remove positions that are not in the chess board
+        pos_check = self.delete_outboard(possible_moves)
+
+        final_moves = []
+        #Check if the positions are empty or not
+        for pos in pos_check:
+            piece = board[pos[0]][pos[1]]
+
+            #The movement can be done if there is no piece in the board
+            #or the piece is of the opposite color
+            if piece.color != self.color or piece == 0:
+                final_moves.append(pos)
+            
+            # The piece is of the same color 
+            else:
+                break #we exit the code
+
+        return final_moves
+
+
+    def check_southeast_moves(self, board: list) -> list:
+        """Check possible southeast moves (bottom right)"""
+        
+        # Initiate the variable
+        possible_moves = []
+
+        # All possible vertical moves
+        for i in range(7):
+            pos_check.append([self.position[0] + i, self.position[1] - i])
+
+        #Remove positions that are not in the chess board
+        pos_check = self.delete_outboard(possible_moves)
+
+        final_moves = []
+        #Check if the positions are empty or not
+        for pos in pos_check:
+            piece = board[pos[0]][pos[1]]
+
+            #The movement can be done if there is no piece in the board
+            #or the piece is of the opposite color
+            if piece.color != self.color or piece == 0:
+                final_moves.append(pos)
+            
+            # The piece is of the same color 
+            else:
+                break #we exit the code
+
+        return final_moves
+
+
 class Pawn(Piece):
+    
+
 
     def calculate_possible_moves(self, board: list) -> None:
         """Calculates the possible moves the pawn can make"""
@@ -81,26 +321,24 @@ class Pawn(Piece):
 
 
 class Rook(Piece):
+    def __init__(self, position: list[int], color: bool):
+        super().__init__(position, color)
+
+        #variable to check if the rook has moved, for castling
+        self.has_moved = False
 
     def calculate_possible_moves(self, board: list) -> None:
         """Calculates the possible moves the rook can make"""
 
-        pos_check = []
-
-        # All possible rook moves
-        for i in range(8):
-            pos_check.append([self.position[0], self.position[1] + i])
-            pos_check.append([self.position[0], self.position[1] - i])
-            pos_check.append([self.position[0] + i, self.position[1]])
-            pos_check.append([self.position[0] - i, self.position[1]])
-
-        # Removing outboard moves
-        pos_check = self.delete_outboard(pos_check)
-
+        #Check the moves to each possible position and adds them to the possible moves list
+        self.possible_moves += self.check_right_moves(board)
+        self.possible_moves += self.check_left_moves(board)
+        self.possible_moves += self.check_upward_moves(board)
+        self.possible_moves += self.check_downward_moves(board)
 
     def __repr__(self) -> str: 
         return "r" if self.color else "R"
-    
+
 
 
 class Bishop(Piece):
@@ -108,17 +346,11 @@ class Bishop(Piece):
     def calculate_possible_moves(self, board: list) -> None:
         """Calculates the possible moves the bishop can make"""
 
-        pos_check = []
-
-        # All posible bishop moves
-        for i in range(8):
-            pos_check.append([self.position[0] + i, self.position[1] + i])
-            pos_check.append([self.position[0] - i, self.position[1] + i])
-            pos_check.append([self.position[0] + i, self.position[1] - i])
-            pos_check.append([self.position[0] - i, self.position[1] - i])
-
-        # Removing outboard moves
-        pos_check = self.delete_outboard(pos_check)
+        #Check the moves to each possible position and adds them to the possible moves list
+        self.possible_moves += self.check_northeast_moves(board)
+        self.possible_moves += self.check_northwest_moves(board)
+        self.possible_moves += self.check_southeast_moves(board)
+        self.possible_moves += self.check_southwest_moves(board)
 
 
     def __repr__(self) -> str: 
@@ -154,6 +386,11 @@ class Knight(Piece):
             # in the tile or the piece is of the opposite color
             if piece == 0 or piece.color is not self.color: 
                 self.possible_moves.append(pos)
+            
+            #the piece is the same color
+            else:
+                #continue the rest of the loop
+                continue
 
 
     def __repr__(self) -> str:
@@ -166,21 +403,16 @@ class Queen(Piece):
     def calculate_possible_moves(self, board: list) -> None:
         """Calculates the possible moves the queen can make"""
 
-        pos_check = []
-        for i in range(8):
-            # Rook type moves
-            pos_check.append([self.position[0], self.position[1] + i])
-            pos_check.append([self.position[0], self.position[1] - i])
-            pos_check.append([self.position[0] + i, self.position[1]])
-            pos_check.append([self.position[0] - i, self.position[1]])
-            # Bishop type moves
-            pos_check.append([self.position[0] + i, self.position[1] + i])
-            pos_check.append([self.position[0] - i, self.position[1] + i])
-            pos_check.append([self.position[0] + i, self.position[1] - i])
-            pos_check.append([self.position[0] - i, self.position[1] - i])
-
-        # Deleting outboard moves
-        pos_check = self.delete_outboard(pos_check)
+        #Check the moves to each possible position and adds them to the possible moves list
+        self.possible_moves += self.check_right_moves(board)
+        self.possible_moves += self.check_left_moves(board)
+        self.possible_moves += self.check_upward_moves(board)
+        self.possible_moves += self.check_downward_moves(board)
+        self.possible_moves += self.check_northeast_moves(board)
+        self.possible_moves += self.check_northwest_moves(board)
+        self.possible_moves += self.check_southeast_moves(board)
+        self.possible_moves += self.check_southwest_moves(board)
+        
 
 
     def __repr__(self) -> str: 
@@ -190,7 +422,15 @@ class Queen(Piece):
 
 class King(Piece): 
 
-     def calculate_possible_moves(self, board: list) -> None:
+    def __init__(self, position: list[int], color: bool):
+        super().__init__(position, color)
+
+        #variable to check if the king has moved, for castling
+        self.has_moved = False
+
+
+
+    def calculate_possible_moves(self, board: list) -> None:
         """Calculates the possible moves the king can make"""
 
         pos_check = []
@@ -216,7 +456,41 @@ class King(Piece):
             # in the tile or the piece is of the opposite color
             if piece == 0 or piece.color is not self.color: 
                 self.possible_moves.append(pos)
-
+            
+            # The piece is the same color
+            else:
+                # Continue the rest of the loop
+                continue
     
-     def __repr__(self) -> str:
+
+    def obtain_horizontal_path(self, pos1: list[int], pos2: list[int])-> list:
+        """ Returns a list with the squares between two positions,the squares have to be in the same row, function will be used in castling"""
+        
+        # Checks they are the same row
+        if pos1[0] != pos2[0]:
+            raise ValueError("They are not in the same row")
+            
+        
+        # Initiate the path variable
+        path = []
+
+
+        if pos1[1]>pos2[1]: # Position 1 is to the right of pos2
+
+            # Iterate through all squares
+            for i in range(pos2[1]+1, pos1[1],1):
+                path.append(self.board[pos1[0]][i]) # Adds the square
+
+
+        elif pos1[1] == pos2[1]: # The same position
+            print("they are the same position")
+            
+        
+        else:   # Position 1 is to the left of pos2
+
+            # Iterate through all squares
+            for i in range(pos1[1]+1, pos2[1], 1):
+                path.append(self.board[pos1[0]][i]) # Adds the square""
+    
+    def __repr__(self) -> str:
         return "a" if self.color else "A"
