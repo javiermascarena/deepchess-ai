@@ -1,6 +1,17 @@
 import numpy as np
 from Pieces import Piece,Pawn,Rook,Bishop,Queen,Knight,King
 
+
+EMPTY_BOARD = [[0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0]]
+
+
 class ChessBoard:
 
     def __init__(self):
@@ -8,63 +19,85 @@ class ChessBoard:
 
         # The board will store a specific moment in the game
         # empty tiles will be filled with 0s
-        self.board = [[0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0, 0, 0],]
+        self.board = EMPTY_BOARD
 
-        #States which turn it is, T -> White, F -> False
+        # States which turn it is, T -> White, F -> False
         self.turn = True
 
-        #lists with all captured pieces
-        self.white_captured_pieces = []
-        self.black_captured_pieces = []
-
-        # Chess pieces will be represented by the following scheme:
-        # [pawn, rook, knight, bishop, queen, king] = [1, 2, 3, 4, 5, 6] 
-        # for white pieces, and for black pieces, [7, 8, 9, 10, 11, 12]
-        self.initialize_board()
-        
+        # Lists with all the pieces
+        self.white_pieces = []
+        self.black_pieces = []
 
 
+    def initialize_game(self) -> None:
+        """Initializes all pieces at the start of the program"""
 
-
-    def initialize_board(self) -> None:
-        """Fills the chess board at the start of the game"""
-
-        # List containing the white pawns
+        # Lists containing the pawns
         w_pawns = [Pawn([6, col], True) for col in range(8)]
-        # Array containing the black pawns
         b_pawns = [Pawn([1, col], False) for col in range(8)]
 
-        
+        # Lists containing the rest of the pieces 
         w_pieces = [Rook([7,0], True), Knight([7,1],True), Bishop([7,2],True),Queen([7,3], True),
                     King([7,4],True), Bishop([7,5],True), Knight([7,6],True),Rook([7,7], True)]
-
-
         b_pieces = [Rook([0,0], False),Knight([0,1],False), Bishop([0,2],False),Queen([0,3], False),
                     King([0,4], False), Bishop([0,5], False), Knight([0,6], False), Rook([0,7], False)]
 
+        # Lists containing all the pieces
+        self.white_pieces = w_pawns + w_pieces
+        self.black_pieces = b_pawns + b_pieces
+
+    
+    def set_board(self) -> None:
+        """Sets the board before every game"""
+
+        # Dividing the white pawns and rest of the pieces 
+        w_pawns = [self.white_pieces[i] for i in range(8)]
+        w_pieces = [self.white_pieces[i] for i in range(8, 16)]
+        # Divideing the black pawns and the rest of the pieces
+        b_pawns = [self.black_pieces[i] for i in range(8)]
+        b_pieces = [self.black_pieces[i] for i in range(8, 16)]
+
+        # Converting pawns back to the pawn class
+        # if they promote in the previous game
+        for i, pawn in enumerate(w_pawns):
+            if not isinstance(pawn, Pawn): 
+                w_pawns[i] = Pawn([0, 0], True)
+
+            # No pawn is captured at the start
+            w_pawns[i].captured = False
+
+        for i, pawn in enumerate(b_pawns):
+            if not isinstance(pawn, Pawn): 
+                b_pawns[i] = Pawn([0, 0], False)
+
+            # No pawn is captured at the start
+            b_pawns[i].captured = False
 
 
-        # Array containing white major pieces
-        #w_pieces = [2, 3, 4, 5, 6, 4, 3, 2]
-        # Array containing black major pieces
-        #b_pieces = [8, 9, 10, 11, 12, 10, 9, 8]
+        # No piece is captured at the start
+        for piece in w_pieces: 
+            piece.captured = False
 
-        # Adding the pawns to the board 
-        self.board[1] = b_pawns  
-        self.board[6] = w_pawns  
-        # Adding the major pieces to the board
+        for piece in b_pieces: 
+            piece.captured = False
+
+        # Updating the pieces to the starting
+        # positions
+        for i in range(8):
+            w_pawns[i].position = [6, i]
+            w_pieces[i].position = [7, i]
+
+            b_pawns[i].position = [1, i]
+            b_pieces[i].position = [0, i]
+        
+        # Emptying the board
+        self.board = EMPTY_BOARD
+        
+        # Showing the pieces on the board
         self.board[0] = b_pieces
+        self.board[1] = b_pawns
+        self.board[6] = w_pawns
         self.board[7] = w_pieces
-
-
-
 
 
     def move_piece(self, start_pos: list[int,int], end_pos: list[int,int]):
