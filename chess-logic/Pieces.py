@@ -35,6 +35,35 @@ class Piece:
         """Resets possible moves of a piece, which will be done each turn"""
         self.possible_moves = []
 
+    def obtain_horizontal_path(self, pos1: list[int], pos2: list[int])-> list:
+        """returns the squares between two squares,  the squares have to be in the same row"""
+        
+        #checks they are the same row
+        if pos1[0] != pos2[0]:
+            print("THey are not in the same row")
+            return
+        
+        #initiate the path variable
+        path = []
+
+
+        if pos1[1]>pos2[1]: #position 1 is to the right of pos2
+
+            #iterate through all squares
+            for i in range(pos2[1]+1, pos1[1],1):
+                path.append(self.board[pos1[0]][i]) #adds the square
+
+
+        elif pos1[1] == pos2[1]: #the same position
+            print("they are the same position")
+            
+        
+        else:   #position 1 is to the left of pos2
+
+            #iterate through all squares
+            for i in range(pos1[1]+1, pos2[1], 1):
+                path.append(self.board[pos1[0]][i]) #adds the square
+
 
 
 class Pawn(Piece):
