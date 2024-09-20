@@ -140,13 +140,13 @@ class ChessBoard:
     def castling(self, king: King, rook: Rook):
         """checks if castling is allowed and if it is, it performs it"""
 
-        #check if they have already moved
+        # Check if they have already moved
         if king.has_moved or rook.has_moved:
             print("Castling is not possible")
             return
         
-        #check if there are pieces between them
-        path = self.obtain_path(king.position, rook.position)
+        # Check if there are pieces between them
+        path = king.obtain_horizontal_path(king.position, rook.position)
 
         for square in path:
             if square != 0:
@@ -154,73 +154,27 @@ class ChessBoard:
                 return
             
 
-        #when implemented add here if the king is under attack or possible check, castling wont be possible
+        # When implemented add here if the king is under attack or possible check, castling wont be possible
         
 
-        #castling implementation
-        if king.position[1] > rook.position[1]: #the queen is between them
+        # Castling implementation
+        if king.position[1] > rook.position[1]: # The queen is between them
             new_rook_pos = [rook.position[0], rook.position[1]+3]
             new_king_pos = [king.position[0], rook.position[1]-2]
 
-        else: #no queen between them
+        else: # No queen between them
             new_rook_pos = [rook.position[0], rook.position[1]-2]
             new_king_pos = [king.position[0], rook.position[1]+2]
 
-        #changes the positions for both pieces
+        # Changes the positions for both pieces
         self.move_piece(king.position, new_king_pos)
         self.move_piece(rook.position, new_rook_pos)
 
-        #castling is only available once, change of has moved flag
+        # Castling is only available once, change of has moved flag
         king.has_moved = True
         rook.has_moved = True
 
         
-
-
-
-
-    def obtain_path(self, pos1: list[int], pos2: list[int])-> list:
-        """returns the squares between two squares,  the squares have to be in the same row"""
-        
-        #checks they are the same row
-        if pos1[0] != pos2[0]:
-            print("THey are not in the same row")
-            return
-        
-        #initiate the path variable
-        path = []
-
-
-        if pos1[1]>pos2[1]: #position 1 is to the right of pos2
-
-            #iterate through all squares
-            for i in range(pos2[1]+1, pos1[1],1):
-                path.append(self.board[pos1[0]][i]) #adds the square
-
-
-        elif pos1[1] == pos2[1]: #the same position
-            print("they are the same position")
-            
-        
-        else:   #position 1 is to the left of pos2
-
-            #iterate through all squares
-            for i in range(pos1[1]+1, pos2[1], 1):
-                path.append(self.board[pos1[0]][i]) #adds the square
-
-
-        #return the list
-        return path
-    
-
-
-
-        
-
-
-
-        
-
 
         
 
