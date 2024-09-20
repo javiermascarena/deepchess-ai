@@ -1,5 +1,5 @@
 import numpy as np
-from Pieces import Piece,Pawn,Rook,Bishop,Queen,Knight,King
+from Pieces import Piece, Pawn, Rook, Bishop, Queen, Knight, King
 
 
 EMPTY_BOARD = [[0, 0, 0, 0, 0, 0, 0, 0],
@@ -19,7 +19,7 @@ class ChessBoard:
 
         # The board will store a specific moment in the game
         # empty tiles will be filled with 0s
-        self.board = EMPTY_BOARD
+        self.board = np.array(EMPTY_BOARD, dtype=object)
 
         # States which turn it is, T -> White, F -> False
         self.turn = True
@@ -68,7 +68,7 @@ class ChessBoard:
 
         for i, pawn in enumerate(b_pawns):
             if not isinstance(pawn, Pawn): 
-                b_pawns[i] = Pawn([0, 0], False)
+                b_pawns[i] = Pawn(None, False)
 
             # No pawn is captured at the start
             b_pawns[i].captured = False
@@ -91,7 +91,7 @@ class ChessBoard:
             b_pieces[i].position = [0, i]
         
         # Emptying the board
-        self.board = EMPTY_BOARD
+        self.board = np.array(EMPTY_BOARD, dtype=object)
         
         # Showing the pieces on the board
         self.board[0] = b_pieces
@@ -100,168 +100,139 @@ class ChessBoard:
         self.board[7] = w_pieces
 
 
-    def move_piece(self, start_pos: list[int,int], end_pos: list[int,int]):
-        """check if a move is possible, if it is it makes the move"""
+    def move_piece(self, start_pos: list[int], end_pos: list[int]) -> None:
+        """Makes a move checking if it is possible and updating
+        the pieces and board afterward"""
 
-        piece = self.board(start_pos[0], start_pos[1])
+        # The piece to be moved
+        piece = self.board[start_pos[0], start_pos[1]]
 
-        #check if the element in the starting position exists
-        if self.piece == 0:
-            print("No piece in this position")
+        # Check if the element in the starting position exists
+        if piece == 0:
+            print("\nNo piece in this position")
             return
 
-
-        #check if its the correct turn        
+        # Check if its the correct turn        
         if piece.color != self.turn:
-            print("It`s not your turn")
+            print("\nIt's not your turn")
             return
         
-        #check possible moves
+        # Check possible moves
         piece.calculate_possible_moves(self.board)
 
-        #check if the final position is possible
+        # Check if the final position is possible
         if end_pos not in piece.possible_moves:
-            print("Not a possible move")
+            print(f"\n{piece}, to {end_pos} is not a possible move")
             return
         
-        #if the piece to move is king or rook, castling wont be possible
-        if isinstance(piece,(King,Rook)):
+        # Checks if the move is castling
+        if isinstance(piece, King) and not piece.has_moved and\
+            (end_pos == [piece.position[0], 2] or end_pos == [piece.position[0], 6]):
+            # If the move is catling we perform it
+            # First we obtain the rook to castle
+            rook_pos = [piece.position[0], 0] if end_pos == [piece.position[0], 2]\
+                else [piece.position[0], 7]
+            rook = self.board[rook_pos[0], rook_pos[1]]
+
+            # Updating the rook and king's positions
+            rook.position = [piece.position[0], 3] if end_pos == [piece.position[0], 2]\
+                else [piece.position[0], 5]
+            piece.position = end_pos
+
+            # Castling cannot be performed anymore
+            piece.has_moved = True
+            # Updating the turn
+            self.turn = not self.turn 
+            return  # Move has been performed
+
+        # If the piece to move is king or rook, castling won't
+        # be possible afterwards
+        if isinstance(piece, (King, Rook)):
             piece.has_moved = True
 
-        
+        # End position piece
+        end_pos_piece = self.board[end_pos[0], end_pos[1]]
 
-        #end position piece
-        end_pos_piece = self.board[end_pos[0]][end_pos[1]]
-
-        #if there is no piece change the values
+        # If there is no piece change the values
         if end_pos_piece == 0:
-            self.board[end_pos[0]][end_pos[1]] = piece
-            self.board[start_pos[0]][start_pos[1]] = 0
+            # Changing positions
+            self.board[end_pos[0], end_pos[1]] = piece
+            self.board[start_pos[0], start_pos[1]] = 0
             piece.position = end_pos
-        #the other piece is an enemy
-        else:
-            #check if the moving piece  is black or white
-            if self.turn: #the piece is white
-                #eliminate the piece
-                self.white_captured_pieces.append(end_pos_piece)
 
-                #modify the rest of values
-                self.board[end_pos[0]][end_pos[1]] = piece
-                self.board[start_pos[0]][start_pos[1]] = 0
-                piece.position = end_pos
+        # The other piece is an enemy piece
+        else:   
+            # Changing positions
+            self.board[end_pos[0], end_pos[1]] = piece
+            self.board[start_pos[0], start_pos[1]] = 0
+            piece.position = end_pos
+            # The piece is captured
+            end_pos_piece.captured = True
 
-                #change turns
-                self.turn = False
-
-            else: #the piece is black
-                #eliminate the piece
-                self.black_captured_pieces.append(end_pos_piece)
-
-                #modify the rest of values
-                self.board[end_pos[0]][end_pos[1]] = piece
-                self.board[start_pos[0]][start_pos[1]] = 0
-                piece.position = end_pos
-
-                #change turns
-                self.turn = True
+        # Change turns
+        self.turn = not self.turn
 
 
+    def castling(self, king: King, rook: Rook) -> None:
+        """Checks if castling is allowed and if it is added 
+        to the king's possible moves"""
 
-
-
-
-    def castling(self, king: King, rook: Rook):
-        """checks if castling is allowed and if it is, it performs it"""
-
-        #check if they have already moved
+        # Check if they have already moved
         if king.has_moved or rook.has_moved:
-            print("Castling is not possible")
             return
         
-        #check if there are pieces between them
-        path = self.obtain_path(king.position, rook.position)
+        # Whether it is the left rook trying to 
+        # castle or the right one
+        left_rook = True if rook.position[1] < king.position[1] else False
 
-        for square in path:
-            if square != 0:
-                print("There is a piece between both pieces, castling cant be done")
-                return
-            
+        # Checking if there is no pieces between the king and rook 
+        if left_rook:  # For the castling to the left
+            for i in range(1, 4):
+                # If there is a piece between them castling 
+                # is not possible
+                if self.board[king.position[0], i] != 0: 
+                    return 
+                
+        else:  # For castling to the right
+            for i in range(5, 7):
+                # If there is a piece between them castling 
+                # is not possible
+                if self.board[king.position[0], i] != 0:
+                    return 
 
-        #when implemented add here if the king is under attack or possible check, castling wont be possible
+        # Obtaining the list of opponent pieces
+        opposite_color = False if king.color else True
+        if opposite_color: 
+            opponent_pieces = self.white_pieces
+        else: 
+            opponent_pieces = self.black_pieces
+
+        # Checking every possible movement of the opponent pieces to 
+        # know if the king is under attack
+        if king.position in [move for piece in opponent_pieces\
+                             for move in piece.possible_moves]: 
+            # The king is under attack -> Castling can't be performed
+            return 
+
+        # Adding the castling moves to the possible moves of both pieces
+        if left_rook: # Castling to the left
+            king.possible_moves.append([king.position[0], 2])
+
+        else: # Castling to the right
+            king.possible_moves.append([king.position[0], 6])
+
+
+# When calculating the possible moves of pieces, the last two pieces should be the kings, 
+# and castling should be computed separately from the king's possible moves, since castling
+# needs the possible movements from all pieces (including the opponent's king) to know 
+# if the king is under attack or not
         
-
-        #castling implementation
-        if king.position[1] > rook.position[1]: #the queen is between them
-            new_rook_pos = [rook.position[0], rook.position[1]+3]
-            new_king_pos = [king.position[0], rook.position[1]-2]
-
-        else: #no queen between them
-            new_rook_pos = [rook.position[0], rook.position[1]-2]
-            new_king_pos = [king.position[0], rook.position[1]+2]
-
-        #changes the positions for both pieces
-        self.move_piece(king.position, new_king_pos)
-        self.move_piece(rook.position, new_rook_pos)
-
-        #castling is only available once, change of has moved flag
-        king.has_moved = True
-        rook.has_moved = True
-
-        
-
-
-
-
-    def obtain_path(self, pos1: list[int], pos2: list[int])-> list:
-        """returns the squares between two squares,  the squares have to be in the same row"""
-        
-        #checks they are the same row
-        if pos1[0] != pos2[0]:
-            print("THey are not in the same row")
-            return
-        
-        #initiate the path variable
-        path = []
-
-
-        if pos1[1]>pos2[1]: #position 1 is to the right of pos2
-
-            #iterate through all squares
-            for i in range(pos2[1]+1, pos1[1],1):
-                path.append(self.board[pos1[0]][i]) #adds the square
-
-
-        elif pos1[1] == pos2[1]: #the same position
-            print("they are the same position")
-            
-        
-        else:   #position 1 is to the left of pos2
-
-            #iterate through all squares
-            for i in range(pos1[1]+1, pos2[1], 1):
-                path.append(self.board[pos1[0]][i]) #adds the square
-
-
-        #return the list
-        return path
-    
-
-
-
-        
-
-
-
-        
-
-
-        
-
-
-
+# Have to implement en passant
 
 # Testing
 if __name__ == "__main__":
     chess = ChessBoard() 
+    chess.initialize_game()
+    chess.set_board()
     for row in range(8):
         print(chess.board[row]) 
