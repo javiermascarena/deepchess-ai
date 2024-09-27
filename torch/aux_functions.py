@@ -13,7 +13,7 @@ def import_data(n_files=79) -> list:
       as many pgns as n_files"""
 
     # Getting the absolute path
-    data_relative_path = os.path.join("..", "data", "pgn")
+    data_relative_path = os.path.join("..", "..", "chess-data", "pgn")
     data_absolute_path = os.path.abspath(data_relative_path)
     data = []
 
