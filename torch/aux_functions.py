@@ -188,20 +188,25 @@ class ChessDataset(Dataset):
         return torch.tensor(tensor, dtype= torch.float32), from_pos_tensor, to_pos_tensor
 
 
-# 1. Load PGN files
+
+"""
+# Code for testing chess dataset
+# Load PGN files
 pgn_files = import_data(n_files=1)
 
-# 2. Parse PGN files to extract tensors and move positions
+#  Parse PGN files to extract tensors and move positions
 games_tensors, move_positions = parse_pgn_to_tensors(pgn_files)
 
-# 3. Create a PyTorch dataset with the extracted data
+#  Create a PyTorch dataset with the extracted data
 chess_dataset = ChessDataset(games_tensors, move_positions)
 
-# 4. Use DataLoader for batching and shuffling
+#  Use DataLoader for batching and shuffling
+# Batch Size 32 defines how many sample will be processed together
+# Shuffle radomizes the order of samples in the dataset
 dataloader = DataLoader(chess_dataset, batch_size=32, shuffle=True)
 
 # Example: Loop through the DataLoader
 for board_tensor, start_pos, end_pos in dataloader:
     print(f"Board Tensor Shape: {board_tensor.shape}")
     print(f"Start Position: {start_pos}")
-    print(f"End Position: {end_pos}")
+    print(f"End Position: {end_pos}")"""
