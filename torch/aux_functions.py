@@ -2,6 +2,9 @@ import chess
 import chess.pgn
 import numpy as np
 import os
+from torch.utils.data import Dataset, DataLoader 
+
+
 
 # The layer number of each piece type in the tensor
 PIECE_MAP = {chess.PAWN: 0, chess.KNIGHT: 1, chess.BISHOP: 2,
@@ -89,7 +92,7 @@ def parse_pgn_to_tensors(data: list) -> list:
 
         # Opening each file
         with open(pgn_file_path) as pgn_file:
-            game_count = 0
+            
 
             # Looping through all games
             while True: 
