@@ -2,7 +2,8 @@ import chess
 import chess.pgn
 import numpy as np
 import os
-from torch.utils.data import Dataset, DataLoader 
+import torch
+from torch.utils.data import Dataset, DataLoader
 
 
 
@@ -81,10 +82,11 @@ def possible_moves_to_tensor(board: chess.Board, tensor: np.array) -> np.array:
 
 
 def parse_pgn_to_tensors(data: list) -> list:
-    """Gets a list of pgn file paths and returns the tensors
-       for each of the games moves"""
+    """Gets a list of pgn file paths and returns the tensors and move positions
+       for each of the games"""
     
     games_tensors = []
+    move_positions = []
 
     # Looping through all files
     for pgn_file_path in data: 
@@ -105,7 +107,8 @@ def parse_pgn_to_tensors(data: list) -> list:
 
                 # Getting the board
                 board = game.board()
-                moves_tensors = []
+                game_tensors = []
+                game_move_positions = []
 
                 # Getting the tensors for each move in the game
                 for move in game.mainline_moves():
@@ -113,11 +116,92 @@ def parse_pgn_to_tensors(data: list) -> list:
                     # Create tensor for the current state of the game
                     tensor = board_to_tensor(board)
                     tensor = possible_moves_to_tensor(board, tensor)
-                    moves_tensors.append(tensor)              
+                    game_tensors.append(tensor)         
+
+                    # Obtain the original position and the destination position after each move
+                    from_square = move.from_square
+                    to_square = move.to_square
+
+                    # Converting the format to row, col
+                    from_pos = divmod(from_square, 8)
+                    to_pos = divmod(to_square, 8)     
+
+                    # Store this positions
+                    game_move_positions.append((from_pos,to_pos))
+
 
                     # Update the board with the move
                     board.push(move)
 
-                games_tensors.append(moves_tensors)
+                # Added the tensors and the moves for each game
+                games_tensors.append(game_tensors)
+                move_positions.append(game_move_positions)
                 
-    return games_tensors
+    return games_tensors, move_positions
+
+
+
+# Create a PyTorch dataset to store tensors and move positions
+class ChessDataset(Dataset):
+    def __init__(self, games_tensors, move_positions):
+        """ Initializes the dataset  with the game tensors and the different moves
+            games_tensors: list of lists, each containing the tensor for each game
+            move_positions: list of lists, each containing the move (from_pos, to_pos)"""
+        
+        self.data = []
+
+        # Join both lists together to have the dataset
+        # Loop through both lists to do this
+        for games_idx in range(len(games_tensors)):
+            # Obtain tensors for the current game
+            game_tensors = games_tensors[games_idx]
+
+            # Obtain the moves (starting and end positions) for the current game
+            game_moves = move_positions[games_idx]
+
+            # Loop through each move in the current game
+            for move_idx in range(len(game_tensors)):
+                # Obtain the board tensor for the current move
+                tensor = game_tensors[move_idx]
+
+                # Obtain the current positions (starting and end positions) for the current move
+                move = game_moves[move_idx]
+
+                # Add both the tensor and move to the data
+                self.data.append((tensor,move))
+
+    def __len__(self):
+        """ Returns the total number of moves in the dataset """
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        """ Returns a specific sample given by the index from the dataset: board tensor and move positions"""
+        tensor, (from_pos, to_pos) = self.data[idx]
+
+        # Convert move positions to PyTorch tensors 
+        # In neural networks and training this will be necessary and better for pytorch
+        from_pos_tensor = torch.tensor(from_pos, dtype = torch.long)
+        to_pos_tensor = torch.tensor(to_pos, dtype = torch.long) # DType specifies that tensors are integer types
+
+        # Return the board state and move
+        # A neural network usually works with float number which is why the board tensor is of type float
+        return torch.tensor(tensor, dtype= torch.float32), from_pos_tensor, to_pos_tensor
+
+
+# 1. Load PGN files
+pgn_files = import_data(n_files=1)
+
+# 2. Parse PGN files to extract tensors and move positions
+games_tensors, move_positions = parse_pgn_to_tensors(pgn_files)
+
+# 3. Create a PyTorch dataset with the extracted data
+chess_dataset = ChessDataset(games_tensors, move_positions)
+
+# 4. Use DataLoader for batching and shuffling
+dataloader = DataLoader(chess_dataset, batch_size=32, shuffle=True)
+
+# Example: Loop through the DataLoader
+for board_tensor, start_pos, end_pos in dataloader:
+    print(f"Board Tensor Shape: {board_tensor.shape}")
+    print(f"Start Position: {start_pos}")
+    print(f"End Position: {end_pos}")
