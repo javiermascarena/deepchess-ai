@@ -190,7 +190,7 @@ class ChessDataset(Dataset):
 
 
 
-# Code for testing chess dataset
+"""# Code for testing chess dataset
 # Load PGN files
 pgn_files = import_data(n_files=1)
 
@@ -209,4 +209,4 @@ dataloader = DataLoader(chess_dataset, batch_size=32, shuffle=True)
 for board_tensor, start_pos, end_pos in dataloader:
     print(f"Board Tensor Shape: {board_tensor.shape}")
     print(f"Start Position: {start_pos}")
-    print(f"End Position: {end_pos}")
+    print(f"End Position: {end_pos}")"""
