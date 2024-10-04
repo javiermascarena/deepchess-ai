@@ -5,7 +5,8 @@ import os
 import torch
 from torch.utils.data import Dataset, DataLoader
 
-
+# Whether to do the operations on the cpu or gpu
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # The layer number of each piece type in the tensor
 PIECE_MAP = {chess.PAWN: 0, chess.KNIGHT: 1, chess.BISHOP: 2,
@@ -40,7 +41,7 @@ def import_data(n_files=79) -> list:
 
 def board_to_tensor(board: chess.Board) -> np.array: 
     """Returns a 12x8x8 sparse tensor with ones where each piece is"""
-    tensor = np.zeros((14, 8, 8))
+    tensor = torch.zeros((14, 8, 8))
 
     # Searching each tile in the board
     for square in chess.SQUARES: 
@@ -55,6 +56,8 @@ def board_to_tensor(board: chess.Board) -> np.array:
             color = 0 if piece.color == chess.WHITE else 6  
             # Updating the tensor
             tensor[piece_idx + color, row, col] = 1
+
+    tensor.to(device)
     
     return tensor
 
@@ -77,6 +80,8 @@ def possible_moves_to_tensor(board: chess.Board, tensor: np.array) -> np.array:
             tensor[12, to_row, to_col] = 1
         else: 
             tensor[13, to_row, to_col] = 1
+    
+    tensor.to(device)
 
     return tensor
 
@@ -180,12 +185,13 @@ class ChessDataset(Dataset):
 
         # Convert move positions to PyTorch tensors 
         # In neural networks and training this will be necessary and better for pytorch
-        from_pos_tensor = torch.tensor(from_pos, dtype = torch.long)
-        to_pos_tensor = torch.tensor(to_pos, dtype = torch.long) # DType specifies that tensors are integer types
+        # They have to be of type long for the loss calculation
+        from_pos_tensor = torch.tensor(from_pos, dtype=torch.long)  
+        to_pos_tensor = torch.tensor(to_pos, dtype=torch.long) 
 
         # Return the board state and move
         # A neural network usually works with float number which is why the board tensor is of type float
-        return torch.tensor(tensor, dtype= torch.float32), from_pos_tensor, to_pos_tensor
+        return torch.tensor(tensor, dtype=torch.float32), from_pos_tensor, to_pos_tensor
 
 
 
