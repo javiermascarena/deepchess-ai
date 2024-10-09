@@ -64,7 +64,7 @@ def board_to_tensor(board: chess.Board) -> np.array:
 
 def possible_moves_to_tensor(board: chess.Board, tensor: np.array) -> np.array: 
     """Returns the updated tensor with the 13th and 14th layers being the
-       possible moves from black and white players """
+       possible moves from black and white players"""
     
     # Extracting the legal moves of the position
     legal_moves = list(board.legal_moves)
@@ -80,17 +80,15 @@ def possible_moves_to_tensor(board: chess.Board, tensor: np.array) -> np.array:
             tensor[12, to_row, to_col] = 1
         else: 
             tensor[13, to_row, to_col] = 1
-    
-    tensor.to(device)
 
-    return tensor
+    return tensor.to(device)
 
 
 def parse_pgn_to_tensors(data: list) -> list:
     """Gets a list of pgn file paths and returns the tensors and move positions
        for each of the games"""
     
-    games_tensors = []
+    board_tensors = []
     next_moves = []
 
     # Looping through all files
@@ -110,8 +108,8 @@ def parse_pgn_to_tensors(data: list) -> list:
 
                 # Getting the board
                 board = game.board()
-                game_tensors = []
-                game_next_moves = []
+                """game_tensors = []
+                game_next_moves = []"""
 
                 # Getting the tensors for each move in the game
                 for move in game.mainline_moves():
@@ -119,78 +117,43 @@ def parse_pgn_to_tensors(data: list) -> list:
                     # Create tensor for the current state of the game
                     tensor = board_to_tensor(board)
                     tensor = possible_moves_to_tensor(board, tensor)
-                    game_tensors.append(tensor)         
+                    board_tensors.append(tensor)         
 
                     # Obtain the original position and the destination position after each move
                     from_square = move.from_square
                     to_square = move.to_square
 
+                    """# Check if the piece exists at the from_square
+                    print("From square:", from_square)
+                    print("Tensor:", tensor)"""
+    
+           
                     # Update the board with the move
                     board.push(move)
-
-                    """# Obtain the move in PGN format (algebraic notation)
-                    move_pgn = board.san(move)  # Use board.san() to get the move in standard algebraic notation (e.g., "e2e4")
-                    print(f"PGN Move: {move_pgn}")
-            
-                    # Add the PGN move to the list of moves for the current game
-                    game_pgn_moves.append(move_pgn)
-
-                    # Converting the format to row, col
-                    from_pos = divmod(from_square, 8)
-                    to_pos = divmod(to_square, 8)
-
-
-                    # Update the board with the move
-                    board.push(move)
-
-                    # Check if the turn is black or not
-                    if board.turn == chess.BLACK:
-                        # CHange the value of rows for black
-                        from_pos = (7 - from_pos[0], from_pos[1])
-                        to_pos = (7 - to_pos[0], to_pos[1])
-
-                
-                    print(f"From index (row, col): {from_pos}")
-                    print(f"from_square: {from_square}")
-                        
-                    print(f"To index (row, col): {to_pos}")
-                    print(f"to_square: {to_square}")
-                    print('---------------------')
-
-                    # Convert square indices (from_row, from_col) to chess notation (like a5, b7)
-                    from_file = chess.FILE_NAMES[from_pos[1]]  # Converts column index to file ('a' to 'h')
-                    from_rank = str(8 - from_pos[0])  # Corrected conversion
-                    to_file = chess.FILE_NAMES[to_pos[1]]
-                    to_rank = str(8 - to_pos[0])
-
-                    from_square_algebraic = from_file + from_rank
-                    to_square_algebraic = to_file + to_rank
-
-                    # Print the move in algebraic format
-                    print(f"Move in algebraic format: {from_square_algebraic} -> {to_square_algebraic}")
-                    print('---------------------') """
-
+                    
                     # Store this positions
-                    game_next_moves.append((from_square, to_square))   
+                    next_moves.append((from_square, to_square))   
 
-                # Added the tensors and the moves for each game
+                """# Added the tensors and the moves for each game
                 games_tensors.append(game_tensors)
-                next_moves.append(game_next_moves)
+                next_moves.append(game_next_moves)"""
 
-    return games_tensors, next_moves
+    return board_tensors, next_moves
 
 
 
 # Create a PyTorch dataset to store tensors and move positions
 class ChessDataset(Dataset):
-    def __init__(self, games_tensors, move_positions):
+    def __init__(self, tensors, next_moves):
         """ Initializes the dataset  with the game tensors and the different moves
             games_tensors: list of lists, each containing the tensor for each game
             move_positions: list of lists, each containing the move (from_pos, to_pos)"""
         
         self.data = []
+        for i in range(len(next_moves)):
+            self.data.append((tensors[i], next_moves[i]))
 
-        # Join both lists together to have the dataset
+        """# Join both lists together to have the dataset
         # Loop through both lists to do this
         for games_idx in range(len(games_tensors)):
             # Obtain tensors for the current game
@@ -208,10 +171,7 @@ class ChessDataset(Dataset):
                 move = game_moves[move_idx]
             
                 # Add both the tensor and move to the data
-                self.data.append((tensor, move))
-
-        
-
+                self.data.append((tensor, move))"""
 
     def __len__(self):
         """ Returns the total number of moves in the dataset """
@@ -224,7 +184,7 @@ class ChessDataset(Dataset):
         """print(f"Fetching index {idx}")
         print(f"Board Tensor Shape: {tensor.shape}")
         print(f"From Position: {from_pos}, To Position: {to_pos}")"""
-
+        flattened_tensor = tensor.flatten()
         # Convert move positions to PyTorch tensors 
         # In neural networks and training this will be necessary and better for pytorch
         # They have to be of type long for the loss calculation
@@ -237,12 +197,12 @@ class ChessDataset(Dataset):
 
         # Return the board state and move
         # A neural network usually works with float number which is why the board tensor is of type float
-        return torch.tensor(tensor, dtype=torch.float32), from_pos_tensor, to_pos_tensor
+        return torch.tensor(flattened_tensor, dtype=torch.float32), from_pos_tensor, to_pos_tensor
 
 
 
-
-"""# Code for testing chess dataset
+"""
+# Code for testing chess dataset
 # Load PGN files
 pgn_files = import_data(n_files=1)
 
