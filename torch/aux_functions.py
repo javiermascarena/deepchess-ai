@@ -5,6 +5,7 @@ import numpy as np
 import os
 import torch
 from torch.utils.data import Dataset, DataLoader
+import time
 
 # Whether to do the operations on the cpu or gpu
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -13,13 +14,35 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PIECE_MAP = {chess.PAWN: 0, chess.KNIGHT: 1, chess.BISHOP: 2,
              chess.ROOK: 3, chess.QUEEN: 4, chess.KING: 5}
 
+cumulative_times = {
+    "import_data": 0,
+    "board_to_tensor": 0,
+    "possible_moves_to_tensor": 0,
+    "parse_pgn_to_tensors": 0
+}
 
+def timer_decorator(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        
+        # Add elapsed time to cumulative times
+        func_name = func.__name__
+        cumulative_times[func_name] += (end_time - start_time)
+
+        return result
+    
+    return wrapper
+
+
+@ timer_decorator
 def import_data(n_files=79) -> list: 
     """Returns a list with the file paths of
       as many pgns as n_files"""
 
     # Getting the absolute path
-    data_relative_path = os.path.join("..", "..", "chess-data", "pgn")
+    data_relative_path = os.path.join("..", "chess-data", "pgn")  # 2 ".." for the jupyter notebook
     data_absolute_path = os.path.abspath(data_relative_path)
     data = []
 
@@ -40,6 +63,7 @@ def import_data(n_files=79) -> list:
     return data
 
 
+@ timer_decorator
 def board_to_tensor(board: chess.Board) -> np.array: 
     """Returns a 12x8x8 sparse tensor with ones where each piece is"""
     tensor = torch.zeros((14, 8, 8))
@@ -63,6 +87,7 @@ def board_to_tensor(board: chess.Board) -> np.array:
     return tensor
 
 
+@ timer_decorator
 def possible_moves_to_tensor(board: chess.Board, tensor: np.array) -> np.array: 
     """Returns the updated tensor with the 13th and 14th layers being the
        possible moves from black and white players"""
@@ -85,6 +110,7 @@ def possible_moves_to_tensor(board: chess.Board, tensor: np.array) -> np.array:
     return tensor.to(device)
 
 
+@ timer_decorator
 def parse_pgn_to_tensors(data: list) -> list:
     """Gets a list of pgn file paths and returns the tensors and move positions
        for each of the games"""
@@ -157,3 +183,15 @@ class ChessDataset(Dataset):
         to_pos_tensor = torch.tensor(to_pos, dtype=torch.long) 
         
         return tensor, from_pos_tensor, to_pos_tensor
+
+
+if __name__ == "__main__":
+    # Load pgn paths
+    pgns = import_data(10)
+
+    # Convert pgns to tensors
+    board_tensors, next_moves = parse_pgn_to_tensors(pgns)
+    
+    print(f"Total time for import_data: {cumulative_times['import_data']:.5f} seconds")
+    print(f"Total time for board_to_tensor: {cumulative_times['board_to_tensor']:.5f} seconds")
+    print(f"Total time for possible_moves_to_tensor: {cumulative_times['possible_moves_to_tensor']:.5f} seconds")
