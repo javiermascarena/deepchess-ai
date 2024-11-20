@@ -120,7 +120,7 @@ def parse_pgn_to_tensors(data: list) -> list:
 
     # Looping through all files
     for pgn_file_path in data: 
-
+        
         # Opening each file
         with open(pgn_file_path) as pgn_file:
 

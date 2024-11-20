@@ -41,10 +41,9 @@ def timer_decorator(func):
     return wrapper
 
 
-@ timer_decorator
-def import_data(n_files=79) -> list:
+def import_data2(n_files=79) -> list:
     """Returns a list of PGN file paths."""
-    data_relative_path = os.path.join("..", "chess-data", "pgn")
+    data_relative_path = os.path.join(".", "chess-data", "pgn")
     data_absolute_path = os.path.abspath(data_relative_path)
     data = []
 
@@ -56,6 +55,36 @@ def import_data(n_files=79) -> list:
             data.append(file_path)
 
     return data
+
+
+@ timer_decorator
+def import_data(start_idx=0, end_idx=79) -> list:
+    """
+    Returns a list of PGN file paths within the specified range.
+    
+    Parameters:
+        start_idx (int): The index of the first file to include.
+        end_idx (int): The index of the last file (exclusive) to include.
+    
+    Returns:
+        list: A list of PGN file paths.
+    """
+    data_relative_path = os.path.join(".", "chess-data", "pgn")
+    data_absolute_path = os.path.abspath(data_relative_path)
+    data = []
+
+    # Enumerate files, only keep those within the range
+    for i, file_name in enumerate(os.listdir(data_absolute_path)):
+        if i < start_idx:
+            continue
+        if i >= end_idx:
+            break
+        file_path = os.path.join(data_absolute_path, file_name)
+        if os.path.isfile(file_path):
+            data.append(file_path)
+
+    return data
+
 
 
 def board_to_tensor(board: chess.Board) -> torch.Tensor:
@@ -101,8 +130,11 @@ def parse_pgn_to_tensors(data: list) -> list:
     """Parses PGN files to generate tensors and move positions."""
     board_tensors = []
     next_moves = []
+    pgn_number = 0
 
     for pgn_file_path in data:
+        print(f"Importing PGN file: {pgn_number + 1}")
+
         with open(pgn_file_path) as pgn_file:
             while True:
                 game = chess.pgn.read_game(pgn_file)
@@ -113,10 +145,12 @@ def parse_pgn_to_tensors(data: list) -> list:
                 tensor = board_to_tensor(board)  # Create initial tensor
 
                 for move in game.mainline_moves():
-                    update_legal_moves(board, tensor)
+                    # update_legal_moves(board, tensor)
                     board_tensors.append(tensor.clone())  # Clone before update
                     next_moves.append((move.from_square, move.to_square))
                     board.push(move)  # Apply move to the board
+        
+        pgn_number += 1
 
     return board_tensors, next_moves
 
@@ -150,7 +184,7 @@ class ChessDataset(Dataset):
 
 if __name__ == "__main__":
     # Load pgn paths
-    pgns = import_data(20)
+    pgns = import_data(25, 35)
 
     # Convert pgns to tensors
     board_tensors, next_moves = parse_pgn_to_tensors(pgns)
