@@ -88,8 +88,8 @@ def import_data(start_idx=0, end_idx=79) -> list:
 
 
 def board_to_tensor(board: chess.Board) -> torch.Tensor:
-    """Returns a 14x8x8 tensor for the board, with one layer per piece type."""
-    tensor = torch.zeros((14, 8, 8), dtype=torch.float32)
+    """Returns a 12x8x8 tensor for the board, with one layer per piece type."""
+    tensor = torch.zeros((12, 8, 8), dtype=torch.float32)
 
     for square in chess.SQUARES:
         piece = board.piece_at(square)
@@ -102,10 +102,10 @@ def board_to_tensor(board: chess.Board) -> torch.Tensor:
     return tensor
 
 
-def update_legal_moves(board: chess.Board, tensor: torch.Tensor) -> None:
-    """
-    Efficiently updates the legal moves layers in the tensor.
-    """
+"""def update_legal_moves(board: chess.Board, tensor: torch.Tensor) -> None:
+    
+    #Efficiently updates the legal moves layers in the tensor.
+    
     # Determine which layer to update
     turn_layer = 12 if board.turn == chess.WHITE else 13
     
@@ -122,7 +122,7 @@ def update_legal_moves(board: chess.Board, tensor: torch.Tensor) -> None:
     cols = move_indices_tensor % 8   # Modulus to get column
 
     # Update the appropriate layer for all moves
-    tensor[turn_layer, rows, cols] = 1
+    tensor[turn_layer, rows, cols] = 1"""
 
 
 @ timer_decorator
