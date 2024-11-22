@@ -54,7 +54,7 @@ def import_data(start_idx=0, end_idx=79) -> list:
 
 def board_to_tensor(board: chess.Board) -> torch.Tensor:
     """Returns a 12x8x8 tensor for the board, with one layer per piece type."""
-    tensor = torch.zeros((12, 8, 8), dtype=torch.float32)
+    tensor = torch.zeros((12, 8, 8), dtype=torch.float16)
 
     for square in chess.SQUARES:
         piece = board.piece_at(square)
@@ -97,51 +97,58 @@ def process_pgn_file_with_progress(pgn_file_path):
     return board_tensors, next_moves
 
 
-def parse_pgn_to_tensors_parallel_with_limited_resources(pgn_files, output_file, batch_size=1000, num_workers=None):
+def parse_pgn_to_tensors_with_optimized_hdf5(pgn_files, output_file, batch_size=1000):
     """
-    Processes PGN files in parallel with controlled resource usage, writes tensors and moves to an HDF5 file incrementally.
+    Optimized PGN-to-tensors conversion with memory-efficient HDF5 writing.
     """
-    # Limit the number of worker processes
-    if num_workers is None:
-        num_workers = max(1, cpu_count() // 2)  # Use half of available CPUs
-
     with h5py.File(output_file, "w") as h5file:
-        tensor_group = h5file.create_group("tensors")
-        moves_group = h5file.create_group("moves")
+        # Create extendable datasets
+        tensor_dataset = h5file.create_dataset(
+            "tensors",
+            shape=(0, 12, 8, 8),
+            maxshape=(None, 12, 8, 8),
+            dtype='float16',
+            compression="gzip",
+            chunks=True,
+        )
+        moves_dataset = h5file.create_dataset(
+            "moves",
+            shape=(0, 2),
+            maxshape=(None, 2),
+            dtype='int16',
+            compression="gzip",
+            chunks=True,
+        )
 
-        batch_count = 0  # Track the number of batches written
+        tensor_offset = 0  # Tracks the current write position
+        move_offset = 0
 
-        # Parallel processing with a progress bar for files
-        with tqdm(total=len(pgn_files), desc="Processing PGN Files") as file_bar:
-            with Pool(processes=num_workers) as pool:
-                for board_tensors, next_moves in pool.imap(process_pgn_file_with_progress, pgn_files):
-                    # Process data in smaller chunks
-                    for i in range(0, len(board_tensors), batch_size):
-                        tensor_batch = batch_to_numpy(board_tensors[i:i + batch_size])
-                        move_batch = np.array(next_moves[i:i + batch_size], dtype=np.int32)
+        # Process each file
+        for pgn_file in tqdm(pgn_files, desc="Processing PGN Files"):
+            board_tensors, next_moves = process_pgn_file_with_progress(pgn_file)
+            
+            # Convert to numpy arrays for efficient appending
+            tensor_batch = batch_to_numpy(board_tensors)
+            move_batch = np.array(next_moves, dtype=np.int16)
 
-                        # Write the batch to HDF5
-                        tensor_group.create_dataset(
-                            f"batch_{batch_count}",
-                            data=tensor_batch,
-                            compression="gzip",
-                            chunks=True,
-                        )
-                        moves_group.create_dataset(
-                            f"batch_{batch_count}",
-                            data=move_batch,
-                            compression="gzip",
-                            chunks=True,
-                        )
+            # Resize datasets to accommodate the new batch
+            new_tensor_size = tensor_offset + tensor_batch.shape[0]
+            new_move_size = move_offset + move_batch.shape[0]
 
-                        batch_count += 1
+            tensor_dataset.resize(new_tensor_size, axis=0)
+            moves_dataset.resize(new_move_size, axis=0)
 
-                        # Flush data to disk after each batch
-                        h5file.flush()
+            # Append the new data
+            tensor_dataset[tensor_offset:new_tensor_size] = tensor_batch
+            moves_dataset[move_offset:new_move_size] = move_batch
 
-                    file_bar.update(1)  # Update the file progress bar
+            tensor_offset = new_tensor_size
+            move_offset = new_move_size
 
-    print(f"Processed {batch_count} batches into {output_file}")
+            # Flush changes to disk
+            h5file.flush()
+
+    print(f"Processed tensors and moves saved to {output_file}")
 
 
 
@@ -150,30 +157,70 @@ def batch_to_numpy(tensor_list):
     return np.stack([tensor.numpy() for tensor in tensor_list])
 
 
+def inspect_hdf5_file(hdf5_file, sample_count=5):
+    """
+    Inspects the contents of an HDF5 file and prints samples for verification.
+    """
+    with h5py.File(hdf5_file, "r") as h5file:
+        # Print dataset shapes
+        print("Tensors dataset shape:", h5file["tensors"].shape)
+        print("Moves dataset shape:", h5file["moves"].shape)
+
+        # Sample data from the start
+        print("\nSample tensors:")
+        for i in range(sample_count):
+            print(h5file["tensors"][i])
+        
+        print("\nSample moves:")
+        for i in range(sample_count):
+            print(h5file["moves"][i])
+
+
+def clear_hdf5_file(hdf5_file):
+    """
+    Clears all datasets in the HDF5 file by deleting and recreating it.
+    """
+    with h5py.File(hdf5_file, "w") as h5file:
+        # Recreate empty datasets
+        h5file.create_dataset(
+            "tensors",
+            shape=(0, 12, 8, 8),
+            maxshape=(None, 12, 8, 8),
+            dtype='float32',
+            compression="gzip",
+            chunks=True,
+        )
+        h5file.create_dataset(
+            "moves",
+            shape=(0, 2),
+            maxshape=(None, 2),
+            dtype='int32',
+            compression="gzip",
+            chunks=True,
+        )
+    print(f"{hdf5_file} has been cleared.")
+
+
+
 class ChessDataset(Dataset):
     def __init__(self, hdf5_file):
         """Initialize the dataset and index all board states."""
         self.hdf5_file = hdf5_file
-        self.sample_index = []  # Map global sample index to (key, index in batch)
         
         with h5py.File(hdf5_file, "r") as h5file:
-            for key in sorted(h5file["tensors"].keys()):
-                num_samples = h5file["tensors"][key].shape[0]  # Number of samples in this batch
-                self.sample_index.extend([(key, i) for i in range(num_samples)])  # Add (key, index) pairs
-                
-        self.length = len(self.sample_index)  # Total number of samples
+            # Use dataset lengths directly
+            self.num_samples = h5file["tensors"].shape[0]
 
     def __len__(self):
         """Return the total number of board states."""
-        return self.length
+        return self.num_samples
 
     def __getitem__(self, idx):
         """Load a specific board state on demand."""
-        key, local_idx = self.sample_index[idx]  # Map global index to (key, index)
-        
         with h5py.File(self.hdf5_file, "r") as h5file:
-            tensor = h5file["tensors"][key][local_idx]  # Access specific board state
-            move = h5file["moves"][key][local_idx]      # Access corresponding move
+            # Access data by index
+            tensor = h5file["tensors"][idx]
+            move = h5file["moves"][idx]
 
         # Convert to PyTorch tensors
         tensor = torch.from_numpy(tensor).float()
@@ -182,23 +229,17 @@ class ChessDataset(Dataset):
         return tensor, move
 
 
+
 if __name__ == "__main__":
-    # Step 1: Import PGN file paths
-    pgn_files = import_data(25, 30)
-
-    # Step 2: Convert PGN files to tensors and store them in HDF5
+     # Step 1: Clear the file before processing
     output_file = "chess_data.hdf5"
-    parse_pgn_to_tensors_parallel_with_limited_resources(pgn_files, output_file)
+    clear_hdf5_file(output_file)
+    
+    # Step 2: Import all PGN files
+    pgn_files = import_data(0, 45)
 
-    # Step 3: Load dataset and verify
-    dataset = ChessDataset(output_file)
-    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+    # Step 3: Convert all PGN files to tensors and store them in HDF5
+    parse_pgn_to_tensors_with_optimized_hdf5(pgn_files, output_file)
 
-    with h5py.File("chess_data.hdf5", "r") as h5file:
-        print("Tensors:", list(h5file["tensors"].keys()))
-        print("Moves:", list(h5file["moves"].keys()))
-
-    for i, (tensor, move) in enumerate(dataloader):
-        print(f"Batch {i}: Tensor shape = {tensor.shape}, Move shape = {move.shape}")
-        if i == 2:  # Only process a few batches for verification
-            break
+    # Step 4: Verify the contents of the file
+    inspect_hdf5_file(output_file, sample_count=5)
