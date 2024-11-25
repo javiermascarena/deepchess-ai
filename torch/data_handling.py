@@ -4,8 +4,7 @@ import chess.pgn
 import numpy as np
 import os
 import torch
-from torch.utils.data import Dataset, DataLoader
-import time
+from torch.utils.data import Dataset
 import h5py  # For efficient data storage
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
@@ -35,6 +34,7 @@ def import_data(start_idx=0, end_idx=79) -> list:
     Returns:
         list: A list of PGN file paths.
     """
+    # Getting the absolute path
     data_relative_path = os.path.join(".", "chess-data", "pgn")
     data_absolute_path = os.path.abspath(data_relative_path)
     data = []
@@ -199,7 +199,6 @@ def clear_hdf5_file(hdf5_file):
             chunks=True,
         )
     print(f"{hdf5_file} has been cleared.")
-
 
 
 class ChessDataset(Dataset):
