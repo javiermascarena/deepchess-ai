@@ -67,10 +67,11 @@ def board_to_tensor(board: chess.Board) -> torch.Tensor:
     return tensor
 
 
-def process_pgn_file_with_progress(pgn_file_path):
+def process_pgn_file(pgn_file_path):
     """Processes a single PGN file with progress tracking."""
     board_tensors = []
     next_moves = []
+    games_processed = 0
 
     with open(pgn_file_path) as pgn_file:
         total_games = sum(1 for _ in chess.pgn.read_headers(pgn_file))  # Count total games
@@ -81,23 +82,24 @@ def process_pgn_file_with_progress(pgn_file_path):
             game = chess.pgn.read_game(pgn_file)
             if game is None:
                 break
-
+            
+            games_processed += 1
             board = game.board()
-            tensor = board_to_tensor(board)  # Create initial tensor
 
             for move in game.mainline_moves():
-                board_tensors.append(tensor.clone())
+                board_tensors.append(board_to_tensor(board))  # Generate tensor for the current state
                 next_moves.append((move.from_square, move.to_square))
                 board.push(move)  # Apply move to the board
 
             progress_bar.update(1)  # Update progress for each game
 
         progress_bar.close()
+        tqdm.write(f"Total Games Processed: {games_processed}")
 
     return board_tensors, next_moves
 
 
-def parse_pgn_to_tensors_with_optimized_hdf5(pgn_files, output_file, batch_size=1000):
+def parse_pgn_to_tensors(pgn_files, output_file, batch_size=1000):
     """
     Optimized PGN-to-tensors conversion with memory-efficient HDF5 writing.
     """
@@ -125,7 +127,7 @@ def parse_pgn_to_tensors_with_optimized_hdf5(pgn_files, output_file, batch_size=
 
         # Process each file
         for pgn_file in tqdm(pgn_files, desc="Processing PGN Files"):
-            board_tensors, next_moves = process_pgn_file_with_progress(pgn_file)
+            board_tensors, next_moves = process_pgn_file(pgn_file)
             
             # Convert to numpy arrays for efficient appending
             tensor_batch = batch_to_numpy(board_tensors)
@@ -235,10 +237,10 @@ if __name__ == "__main__":
     clear_hdf5_file(output_file)
     
     # Step 2: Import all PGN files
-    pgn_files = import_data(0, 45)
+    pgn_files = import_data(0, 25)
 
     # Step 3: Convert all PGN files to tensors and store them in HDF5
-    parse_pgn_to_tensors_with_optimized_hdf5(pgn_files, output_file)
+    parse_pgn_to_tensors(pgn_files, output_file)
 
     # Step 4: Verify the contents of the file
     inspect_hdf5_file(output_file, sample_count=5)
